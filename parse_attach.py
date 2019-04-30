@@ -11,6 +11,7 @@ import os
 
 # import win32com.client
 import pdfplumber
+from pptx import Presentation
 from xlrd import open_workbook
 import docx
 
@@ -104,8 +105,30 @@ class ParseAttachFile(object):
         except:
             return ''
 
+    def read_pptx(self, path):
+        try:
+            prs = Presentation(path)
+            MBslides = prs.slides
+            MBslidesNum = len(MBslides)
+            data = ''
+            for i in range(0, MBslidesNum):
+                MBshape = MBslides[i].shapes
+                MBshapeNum = len(MBshape)
+                for j in range(0, MBshapeNum):
+                    if MBshape[j].has_text_frame:
+                        frame_text = MBshape[j].text
+                        data += frame_text.strip().replace("\n", '')
+                    elif MBshape[j].has_table:
+                        for cell in MBshape[j].table.iter_cells():
+                            table_text = cell.text.strip().replace("\n", '')
+                            data += table_text
+            # print(data)
+            return data
+        except:
+            return ''
+
     def run(self):
-        file_type = self.path.split('.')[-1]
+        file_type = self.path.split('.')[-1].lower()
         if file_type in FILE_TYPE:
             context = eval('self.read_{}'.format(file_type))(self.path)
             os.remove(os.getcwd() + "/attach_files/" + self.file_name)
