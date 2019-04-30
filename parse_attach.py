@@ -10,9 +10,11 @@
 import os
 
 # import win32com.client
+import pdfplumber
 from xlrd import open_workbook
 import docx
-import sys
+
+from config import FILE_TYPE
 
 
 class ParseAttachFile(object):
@@ -83,43 +85,40 @@ class ParseAttachFile(object):
         except:
             return ''
 
+    def read_txt(self, path):
+        try:
+            with open(path, 'r') as f:
+                data = f.read().strip().replace('\n', '')
+            # print(data)
+            return data
+        except:
+            return ''
+
+    def read_pdf(self, path):
+        try:
+            data = ''
+            with pdfplumber.open(path) as pdf:
+                for temp in pdf.pages:
+                    data += temp.extract_text().strip().replace('\n', '')
+            return data
+        except:
+            return ''
+
     def run(self):
         file_type = self.path.split('.')[-1]
-        # print(file_type)
-        try:
-            if file_type == 'docx':
-                context = self.read_docx(self.path)
-                # 解析成功后删除文件，把这个功能放到解析里面了
-                os.remove(os.getcwd() + "/attach_files/" + self.file_name)
-            elif file_type == 'doc':
-                context = self.read_doc(self.path)
-                # 解析成功后删除文件，把这个功能放到解析里面了
-                os.remove(os.getcwd() + "/attach_files/" + self.file_name)
-            # elif file_type == 'pptx':
-            #     context = self.read_pptx(self.path)
-            elif file_type == 'xlsx':
-                context = self.read_xlsx(self.path)
-                # 解析成功后删除文件，把这个功能放到解析里面了
-                os.remove(os.getcwd() + "/attach_files/" + self.file_name)
-            elif file_type == 'eml':
-                context = self.read_eml(self.path)
-                # 解析成功后删除文件，把这个功能放到解析里面了
-                os.remove(os.getcwd() + "/attach_files/" + self.file_name)
-            else:
-                context = ''
-            print(context)
-            context = self.file_name + "\n" + context + "\n"
-            return context
-        except Exception as e:
-            print('文件读取异常，原因是：', str(e).strip())
-            pass
+        if file_type in FILE_TYPE:
+            context = eval('self.read_{}'.format(file_type))(self.path)
+            os.remove(os.getcwd() + "/attach_files/" + self.file_name)
+        else:
+            print('暂时不支持的文件格式')
+            context = ''
+        context = self.file_name + "\n" + context + "\n"
+        print(context)
+        return context
 
 
 if __name__ == '__main__':
-    # spider = ParseAttachFile(r'C:\Users\Bruce Long\Desktop\attach_parse\aaa.docx')
-    # spider = ParseAttachFile(r'C:\Users\Bruce Long\Desktop\attach_parse\新建Microsoft PowerPoint 演示文稿.pptx')
-    # spider = ParseAttachFile(r'C:\Users\Bruce Long\Desktop\attach_parse\工作通知.doc')
-    # spider = ParseAttachFile(r'C:\Users\Bruce Long\Desktop\attach_parse\wx_data.xlsx')
-    spider = ParseAttachFile(r'C:\Users\hbsxw\Desktop\163_0424\111.docx')
-    print(spider.run())
-    # print(os.getcwd())
+    path = r'C:\Users\Bruce Long\Desktop\163_mail\163_0430\attach_files\ '.strip()
+    file_name = 'pdf_f5160d266cf44767682cf35b824f47bf_BD卖家后台设置方法指导.pdf'
+    spider = ParseAttachFile(path, file_name)
+    spider.run()
